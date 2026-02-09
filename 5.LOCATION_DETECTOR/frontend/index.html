@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid Location Detection Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-idle {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .status-detecting {
+            background: #fff3cd;
+            color: #856404;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-gps {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-ip {
+            background: #cfe2ff;
+            color: #084298;
+        }
+
+        .status-manual {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #555;
+        }
+
+        .info-box.warning {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+
+        .info-box.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+            color: #721c24;
+        }
+
+        .location-data {
+            background: #f0f4ff;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .location-data.visible {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+            font-size: 13px;
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .data-value {
+            color: #333;
+            word-break: break-all;
+            text-align: right;
+            flex: 1;
+            margin-left: 12px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #dee2e6;
+        }
+
+        .manual-input {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .manual-input.visible {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .map-link {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .map-link:hover {
+            background: #5568d3;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1s linear infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .accuracy-meter {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .accuracy-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .accuracy-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #667eea);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            border-left: 4px solid #dc3545;
+            padding: 12px;
+            border-radius: 4px;
+            color: #721c24;
+            font-size: 13px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 24px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 Location Detection</h1>
+            <p class="subtitle">Demonstrates hybrid location strategies: GPS + IP-based geolocation + manual fallback</p>
+        </div>
+
+        <!-- Status Section -->
+        <div class="section">
+            <div class="section-title">
+                Detection Status
+                <span class="status-badge status-idle" id="statusBadge">Ready</span>
+            </div>
+            <div class="info-box" id="statusMessage">
+                Click "Detect Location" to start. Your browser will request permission to access your location.
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="section">
+            <div class="button-group">
+                <button class="btn-primary" id="detectBtn" onclick="requestLocation()">
+                    <span id="detectBtnText">🔍 Detect Location</span>
+                </button>
+                <button class="btn-secondary" id="manualBtn" onclick="toggleManualInput()">⌨️ Manual Entry</button>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- Location Data Display -->
+        <div class="section">
+            <div class="section-title">📍 Detected Location</div>
+            <div class="location-data" id="locationData">
+                <div class="data-item">
+                    <span class="data-label">Source:</span>
+                    <span class="data-value" id="dataSource">—</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">City:</span>
+                    <span class="data-value" id="dataCity">—</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Area/Locality:</span>
+                    <span class="data-value" id="dataArea">—</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Region/State:</span>
+                    <span class="data-value" id="dataRegion">—</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Country:</span>
+                    <span class="data-value" id="dataCountry">—</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Latitude:</span>
+                    <span class="data-value" id="dataLatitude">—</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Longitude:</span>
+                    <span class="data-value" id="dataLongitude">—</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Accuracy:</span>
+                    <span class="data-value" id="dataAccuracy">—</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-label">Timestamp:</span>
+                    <span class="data-value" id="dataTimestamp">—</span>
+                </div>
+                <div class="accuracy-meter" id="accuracyMeter" style="display: none;">
+                    <div>Accuracy Confidence</div>
+                    <div class="accuracy-bar">
+                        <div class="accuracy-fill" id="accuracyFill"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="mapLink"></div>
+        </div>
+
+        <!-- Manual Input Section -->
+        <div class="section">
+            <div class="manual-input" id="manualInput">
+                <div class="section-title">⌨️ Manual Location Entry</div>
+                <div class="input-group">
+                    <label for="cityInput">City *</label>
+                    <input type="text" id="cityInput" placeholder="e.g., San Francisco, New York, Tokyo" required>
+                </div>
+                <div class="input-group">
+                    <label for="regionInput">Region/State</label>
+                    <input type="text" id="regionInput" placeholder="e.g., California, New York, Tokyo">
+                </div>
+                <div class="input-group">
+                    <label for="countryInput">Country</label>
+                    <input type="text" id="countryInput" placeholder="e.g., United States, Japan">
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="submitManualLocation()">✓ Submit</button>
+                    <button class="btn-secondary" onclick="toggleManualInput()">✕ Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-World Principles -->
+        <div class="section">
+            <div class="section-title">ℹ️ How It Works</div>
+            <div class="info-box">
+                <strong>Step 1:</strong> Browser requests location permission (GPS/Wi-Fi)
+                <br><strong>Step 2:</strong> If granted, sends coordinates to backend for reverse geocoding
+                <br><strong>Step 3:</strong> If denied, backend falls back to IP-based geolocation
+                <br><strong>Step 4:</strong> Manual entry available as final safety net
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🔒 Your location is detected locally and not stored permanently. This is a proof-of-concept demonstration of real-world location strategies used by companies like Google, Uber, and Airbnb.</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = 'http://localhost:8000';
+        const BACKEND_TIMEOUT = 10000; // 10 seconds
+
+        // State management
+        let currentLocation = null;
+
+        /**
+         * Request location permission and detect GPS coordinates
+         * Uses browser's Geolocation API (W3C standard)
+         * 
+         * Real-world note: This is how mobile and desktop browsers request location.
+         * The OS/browser decides whether to use GPS, Wi-Fi, or other methods.
+         */
+        async function requestLocation() {
+            const detectBtn = document.getElementById('detectBtn');
+            const detectBtnText = document.getElementById('detectBtnText');
+            const statusBadge = document.getElementById('statusBadge');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            // Disable button and show loading state
+            detectBtn.disabled = true;
+            detectBtnText.innerHTML = '<span class="loading-spinner"></span>Detecting...';
+            statusBadge.className = 'status-badge status-detecting';
+            statusBadge.textContent = 'Detecting...';
+            clearError();
+
+            try {
+                // Check if Geolocation API is available
+                if (!navigator.geolocation) {
+                    throw new Error('Geolocation API is not supported in this browser');
+                }
+
+                // Request high-accuracy location (GPS if available)
+                const gpsPromise = new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            resolve({
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude,
+                                accuracy: position.coords.accuracy
+                            });
+                        },
+                        (error) => {
+                            reject(error);
+                        },
+                        {
+                            enableHighAccuracy: true,
+                            timeout: 10000,  // 10 seconds to get GPS
+                            maximumAge: 0    // Always get fresh location
+                        }
+                    );
+                });
+
+                // Set timeout for GPS request
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('GPS timeout')), 12000);
+                });
+
+                let gpsCoordinates = null;
+                try {
+                    gpsCoordinates = await Promise.race([gpsPromise, timeoutPromise]);
+                    console.log('GPS coordinates obtained:', gpsCoordinates);
+                } catch (error) {
+                    console.log('GPS not available or denied:', error.message);
+                    // Continue to IP-based fallback
+                }
+
+                // Send to backend
+                await sendLocationToBackend(gpsCoordinates);
+
+            } catch (error) {
+                console.error('Location detection error:', error);
+                showError(error.message);
+                statusBadge.className = 'status-badge status-idle';
+                statusBadge.textContent = 'Error';
+            } finally {
+                detectBtn.disabled = false;
+                detectBtnText.innerHTML = '🔍 Detect Location';
+            }
+        }
+
+        /**
+         * Send location data to backend for processing
+         * Backend handles:
+         * - Reverse geocoding (if GPS available)
+         * - IP-based fallback (if GPS denied)
+         * - JSON output for learning
+         */
+        async function sendLocationToBackend(gpsCoordinates) {
+            const statusBadge = document.getElementById('statusBadge');
+            const statusMessage = document.getElementById('statusMessage');
+
+            try {
+                const payload = {
+                    latitude: gpsCoordinates?.latitude || null,
+                    longitude: gpsCoordinates?.longitude || null,
+                    accuracy: gpsCoordinates?.accuracy || null
+                };
+
+                const response = await fetch(`${API_BASE}/api/location/detect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Backend error: ${response.status}`);
+                }
+
+                const locationData = await response.json();
+                currentLocation = locationData;
+
+                // Determine source and update UI
+                const source = locationData.source || 'unknown';
+                let sourceLabel = '🛰️ GPS (High Accuracy)';
+                let statusClass = 'status-gps';
+                let statusText = 'GPS Detected';
+
+                if (source === 'ip') {
+                    sourceLabel = '🌐 IP-Based (Fallback)';
+                    statusClass = 'status-ip';
+                    statusText = 'IP Fallback';
+                    statusMessage.innerHTML = `
+                        <strong>⚠️ Location Permission Denied:</strong> Using IP-based geolocation as fallback. 
+                        Accuracy is lower but city/region should be correct.
+                    `;
+                    statusMessage.className = 'info-box warning';
+                } else if (source === 'manual') {
+                    sourceLabel = '⌨️ Manual Entry';
+                    statusClass = 'status-manual';
+                    statusText = 'Manual';
+                } else {
+                    statusMessage.innerHTML = '✅ Location detected using GPS. High accuracy available.';
+                    statusMessage.className = 'info-box';
+                }
+
+                statusBadge.className = `status-badge ${statusClass}`;
+                statusBadge.textContent = statusText;
+
+                // Display location data
+                displayLocationData(locationData, sourceLabel);
+
+            } catch (error) {
+                console.error('Backend communication error:', error);
+                showError(`Failed to contact backend: ${error.message}`);
+                statusBadge.className = 'status-badge status-idle';
+                statusBadge.textContent = 'Error';
+            }
+        }
+
+        /**
+         * Display location data in UI
+         */
+        function displayLocationData(location, sourceLabel) {
+            const locationDiv = document.getElementById('locationData');
+            const mapLinkDiv = document.getElementById('mapLink');
+
+            // Update data fields
+            document.getElementById('dataSource').textContent = sourceLabel;
+            document.getElementById('dataCity').textContent = location.city || '—';
+            document.getElementById('dataArea').textContent = location.area || '—';
+            document.getElementById('dataRegion').textContent = location.region || '—';
+            document.getElementById('dataCountry').textContent = location.country || '—';
+            document.getElementById('dataLatitude').textContent = location.latitude ? location.latitude.toFixed(4) : '—';
+            document.getElementById('dataLongitude').textContent = location.longitude ? location.longitude.toFixed(4) : '—';
+            
+            // Display accuracy if available
+            if (location.accuracy) {
+                document.getElementById('dataAccuracy').textContent = `±${Math.round(location.accuracy)} meters`;
+                const accuracyMeter = document.getElementById('accuracyMeter');
+                accuracyMeter.style.display = 'block';
+                
+                // Calculate accuracy percentage (0-100m = excellent, >100m = lower)
+                const accuracyPercent = Math.min(100, Math.round((100 - Math.min(location.accuracy, 100)) / 100 * 100));
+                document.getElementById('accuracyFill').style.width = accuracyPercent + '%';
+            } else {
+                document.getElementById('dataAccuracy').textContent = 'Not available (IP-based)';
+                document.getElementById('accuracyMeter').style.display = 'none';
+            }
+
+            document.getElementById('dataTimestamp').textContent = new Date(location.timestamp).toLocaleString();
+
+            // Show location data
+            locationDiv.classList.add('visible');
+
+            // Add map link if we have coordinates
+            if (location.latitude && location.longitude) {
+                mapLinkDiv.innerHTML = `
+                    <a href="https://maps.google.com/?q=${location.latitude},${location.longitude}" 
+                       target="_blank" class="map-link">
+                        🗺️ View on Google Maps
+                    </a>
+                `;
+            } else {
+                mapLinkDiv.innerHTML = '';
+            }
+        }
+
+        /**
+         * Toggle manual input form
+         */
+        function toggleManualInput() {
+            const manualInput = document.getElementById('manualInput');
+            manualInput.classList.toggle('visible');
+            
+            if (manualInput.classList.contains('visible')) {
+                document.getElementById('cityInput').focus();
+            }
+        }
+
+        /**
+         * Submit manual location
+         */
+        async function submitManualLocation() {
+            const city = document.getElementById('cityInput').value.trim();
+            const region = document.getElementById('regionInput').value.trim();
+            const country = document.getElementById('countryInput').value.trim();
+
+            if (!city) {
+                showError('Please enter a city name');
+                return;
+            }
+
+            const statusBadge = document.getElementById('statusBadge');
+            statusBadge.className = 'status-badge status-manual';
+            statusBadge.textContent = 'Manual';
+
+            try {
+                const params = new URLSearchParams({
+                    city: city,
+                    region: region || '',
+                    country: country || ''
+                });
+
+                const response = await fetch(`${API_BASE}/api/location/manual?${params}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Backend error: ${response.status}`);
+                }
+
+                const locationData = await response.json();
+                currentLocation = locationData;
+
+                displayLocationData(locationData, '⌨️ Manual Entry');
+                toggleManualInput();
+
+                // Clear input fields
+                document.getElementById('cityInput').value = '';
+                document.getElementById('regionInput').value = '';
+                document.getElementById('countryInput').value = '';
+
+                document.getElementById('statusMessage').innerHTML = '✅ Location saved. This data has been stored for verification purposes.';
+                document.getElementById('statusMessage').className = 'info-box';
+
+            } catch (error) {
+                console.error('Manual location submission error:', error);
+                showError(`Failed to save location: ${error.message}`);
+            }
+        }
+
+        /**
+         * Display error message
+         */
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('visible');
+        }
+
+        /**
+         * Clear error message
+         */
+        function clearError() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.classList.remove('visible');
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Location Detection App initialized');
+            console.log('Backend API:', API_BASE);
+            
+            // Check if Geolocation API is available
+            if (!navigator.geolocation) {
+                showError('Geolocation API not supported. Please use a modern browser.');
+            }
+        });
+    </script>
+</body>
+</html>
